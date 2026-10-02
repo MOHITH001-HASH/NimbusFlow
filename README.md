@@ -1,102 +1,101 @@
-# NimbusFlow: Autonomous AutoPay Voice Recovery Agent
+# NimbusFlow
+
+Autonomous Outbound Voice Payment Recovery System
 
 Repository: https://github.com/MOHITH001-HASH/NimbusFlow
 
 ## Overview
 
-NimbusFlow is an autonomous, policy-governed outbound voice agent (Ava) engineered to recover delinquent recurring subscription payments for cloud and SaaS infrastructure platforms. The system replaces aggressive debt-collection tactics with compliant, conversational dunning: resolving payment failures through empathetic negotiation, two-factor identity verification, and out-of-band payment link generation.
+NimbusFlow is an autonomous, policy-governed outbound voice engine designed for recurring subscription payment recovery in enterprise SaaS and cloud infrastructure environments. The system executes automated customer outreach for delinquent accounts, resolving involuntary billing failures—including expired payment instruments, temporary bank holds, and insufficient balances—via structured voice negotiation, cryptographic two-factor identity verification, and out-of-band transaction processing.
 
-The codebase provides both a standalone, dependency-free Python 3.10+ implementation and a full-stack Node.js/TypeScript console with real-time Server-Sent Events (SSE).
-
----
+The platform provides dual-runtime backend implementations in Python (FastAPI, Flask, and native standard library) and Node.js/TypeScript, alongside multiple frontend delivery targets including pure HTML5/JavaScript, React (JSX), Next.js, and an integrated real-time operator workstation.
 
 ## Key Capabilities
 
-- **Automated Voice Dunning**: Engages subscribers experiencing recurring billing failures (expired cards, insufficient funds, automated bank security holds, or invoice inquiries).
-- **Mandatory AI Identification**: Opens every call with an unambiguous disclosure that the caller is an automated artificial intelligence assistant communicating over a recorded line.
-- **Two-Factor Identity Gating**: Challenges the subscriber for secondary verification (card last 4 digits or billing postal code) before disclosing account balances or subscription details.
-- **Out-of-Band Payment Processing**: Prohibits the collection of credit card numbers, CVVs, or OTPs over voice channels. Payment is completed securely via cryptographically signed SMS checkout links.
-- **Real-Time Payment Synchronization**: Monitors payment completion on the hosted portal and immediately alerts the ongoing voice call via Server-Sent Events.
-- **Code-Enforced Recovery Ladders**: Applies deterministic negotiation policies (immediate checkout link, scheduled promise-to-pay commitment, or 3-month split installment plan) without hallucinating unauthorized discounts.
-- **Autonomous Call Deflection & Escalation**: Instantly processes Do-Not-Call (DNC) requests, detects third-party answers to prevent debt exposure, and routes complex disputes directly to human billing supervisors.
-
----
+- **Deterministic Dialogue & Policy Ladder**: Replaces unconstrained model outputs with code-enforced recovery stages (immediate checkout link, scheduled promise-to-pay, or 3-month split installment plans) preventing unauthorized concessions.
+- **Mandatory First-Sentence AI Disclosure**: Complies with statutory telecommunications regulations by delivering an explicit automated assistant disclosure on a recorded line before requesting subscriber confirmation.
+- **Pre-Disclosure Identity Verification**: Enforces a strict two-factor authentication gate (requiring payment instrument last 4 digits or billing postal code) prior to releasing sensitive billing information or account balances.
+- **Out-of-Band Payment Processing (PCI-DSS Scope Exclusion)**: Prohibits the collection, transmission, or ingestion of cardholder data over voice channels. Transactions execute via cryptographically signed checkout sessions dispatched by SMS.
+- **Real-Time Payment Synchronization**: Monitors payment completion on the external checkout portal and signals active call sessions via Server-Sent Events (SSE) to acknowledge settlement without disconnecting.
+- **Regulatory Call Filtering**: Restricts outbound dialing to permissible windows (09:00–20:00 subscriber local time), suppresses numbers lacking affirmative consent, enforces weekly contact limits, and executes immediate Do-Not-Call (DNC) removals.
+- **Automated Escalation & Third-Party Protection**: Detects wrong numbers and unverified third parties, concluding calls without disclosing account status. Automatically escalates billing disputes to human supervisors.
 
 ## Installation & Quick Start
 
-### Python Backend Implementations (FastAPI / Flask / Native)
+### Python Backends
 
-The Python backend is available in three production-grade variants with complete functional parity:
-1. **Native Python Server (`python/app.py` & `python/main.py`)**: Zero external dependencies (uses Python 3.10 standard library `http.server`, `dataclasses`, `hmac`).
-2. **FastAPI Engine (`python/app_fastapi.py`)**: Built with Pydantic v2 schemas, asynchronous streaming for SSE, dependency-injected auth, and OpenAPI `/docs`.
-3. **Flask Engine (`python/app_flask.py`)**: Built with standard WSGI routes, request hooks, and cookie-based session management.
+The Python service layer operates under Python 3.10+ and is available in three architectures:
 
 ```bash
-# Option A: Launch the zero-dependency Python Web Console & API server
+# 1. Native Standard Library (Zero External Dependencies)
 python3 python/main.py
 
-# Option B: Run with FastAPI (requires fastapi, uvicorn)
+# 2. FastAPI Engine (Asynchronous SSE, Pydantic v2 Validation, OpenAPI Docs at /docs)
 uvicorn python.app_fastapi:app --host 0.0.0.0 --port 5000
 
-# Option C: Run with Flask (requires flask)
+# 3. Flask Engine (WSGI Architecture with Blueprint Routing)
 python3 python/app_flask.py
 
-# Run the 10-persona compliance and policy benchmark
+# 4. Compliance & Policy Benchmark Suite (10 Personas)
 python3 python/evals/run_evals.py
 
-# Execute the interactive terminal-based call simulation
-python3 python/evals/run_demo.py
-
-# Run automated unit tests
+# 5. Unit Test Suite
 python3 python/tests/test_autopay.py
 ```
 
-### Full-Stack Node.js & TypeScript Console
+### Full-Stack Node.js & Multi-Frontend Environments
 
 ```bash
-# 1. Install dependencies
+# Install dependencies
 npm ci
 
-# 2. Launch the integrated development server (Express backend + Vite frontend on port 3000)
+# Launch integrated development server (Express reverse proxy + Vite frontend on port 3000)
 npm run dev
 
-# 3. Run unit test suite
+# Run integration test suite
 npm test
 
-# 4. Run TypeScript automated benchmark
-npm run eval
+# Launch standalone Node.js Express server
+node server.js
+
+# Launch Next.js application
+cd nextjs && npm install && npm run dev
 ```
 
-Operator Console default credentials:
-- **Username**: `ops`
-- **Password**: `test` (overridable via `OPS_PASSWORD` in `.env`)
+### Operator Authentication
 
----
+The administrative operator console is protected by session-based authentication:
+- **Default Username**: `ops`
+- **Default Password**: `test` (configurable via `OPS_PASSWORD` environment variable)
+- **Session Mechanism**: Cryptographically random 32-byte session tokens delivered via `HttpOnly; SameSite=Strict` cookies with IP brute-force rate limiting.
+
+### Frontend Delivery Channels
+
+- **Standalone HTML5/JavaScript Console**: `/console` or `public/standalone_console.html` (zero build step required).
+- **Pure React / JavaScript**: `src/frontend_js/` (modular ES6+ JSX components).
+- **Next.js Engine**: `nextjs/` (server-side and client-side rendering with API route integration).
+- **Integrated Development Console**: Standard React/Vite interface on port 3000.
 
 ## Compliance Design
 
-The platform enforces statutory debt-collection regulations (TCPA, FDCPA, and TRAI):
+The outbound telephony subsystem programmatically complies with TCPA, FDCPA, and TRAI regulatory mandates:
 
-1. **Permissible Calling Hours**: Outbound calls are programmatically restricted to 09:00 to 20:00 in the subscriber's local timezone.
-2. **Affirmative Dialing Consent**: Numbers without explicit opt-in consent are blocked from automated outbound dialing queues.
-3. **Outreach Frequency Capping**: Subscribed accounts are capped at a maximum of three contact attempts per seven-day period.
-4. **Immediate DNC Execution**: When a customer requests removal, the system marks the account with an immutable Do-Not-Call flag, ceases communication immediately, and cancels subsequent scheduled attempts.
-5. **Third-Party Data Shielding**: If an unverified third party answers, the agent concludes the call without mentioning debt delinquency, account balances, or service names.
-
----
+1. **Permissible Calling Hours**: Dispatches are validated against recipient timezones, restricting calls strictly to 09:00 through 20:00 local time.
+2. **Affirmative Dialing Consent**: Telephony queues filter against verifiable consent records; accounts lacking affirmative consent cannot be queued for automated dialing.
+3. **Outreach Frequency Caps**: Contact attempts are bounded by a mandatory limit of no more than three attempts within a rolling 7-day window.
+4. **Immediate DNC Execution**: Verbal or electronic opt-out triggers immediate registration in the internal Do-Not-Call registry, terminating active outreach and canceling pending scheduled calls.
+5. **Third-Party Data Shielding**: Calls answered by non-account holders terminate immediately following negative identity confirmation, prohibiting disclosure of debt existence or subscription details.
 
 ## Security & Safety
 
-- **Voice Channel Isolation (PCI-DSS)**: Voice agents never accept or process payment instruments over the telephone. All financial transactions take place on isolated, SSL-encrypted checkout sessions.
-- **Authentication Lockout**: Two consecutive failed verification attempts immediately terminate the session and place an administrative lock on automated telephone servicing for that account.
-- **Caller ID Spoofing Defense**: Account context resolution is strictly bound to the telephone number initiated by the dialer, preventing attackers from querying unrelated customer records by supplying spoofed IDs.
-- **Session Protection**: Operator console endpoints require 32-byte cryptographically random session tokens stored in secure, `HttpOnly`, `SameSite=Strict` cookies. Authentication routes include IP-based rate limiting to prevent brute-force attacks.
-- **Immutable Audit Logging**: Every outbound dial, identity verification attempt, SMS dispatch, and call outcome is written with UTC timestamps to an audit ledger.
-
----
+- **PCI-DSS Voice Channel Isolation**: Voice models and speech-to-text pipelines are isolated from payment card data. All card collection is handled through hosted checkout links.
+- **Authentication Lockout Defense**: Two consecutive failed verification attempts immediately terminate the session and place an administrative lock on automated voice interactions for that account.
+- **Anti-Spoofing Context Binding**: Caller account context is derived strictly from verified carrier metadata or dialed destination numbers, rejecting arbitrary customer ID parameters.
+- **Timing-Safe Authentication**: Administrative password verification and webhook signature validation employ constant-time cryptographic comparisons (`crypto.timingSafeEqual` / `hmac.compare_digest`).
+- **Immutable Regulatory Audit Ledger**: Every call turn, identity verification attempt, SMS dispatch event, and payment transaction is committed to an append-only audit trail with ISO 8601 UTC timestamps.
 
 ## Limitations
 
-- **Carrier Regulatory Registration (DLT)**: Real-world SMS delivery to Indian mobile numbers (+91) requires pre-registered sender headers and message templates approved on a TRAI-compliant Distributed Ledger Technology portal. In development environments, dispatch links are mirrored directly in the operator console.
-- **Payment Processing**: The integrated checkout portal emulates real gateway behavior (UPI, Card, NetBanking) for testing and demonstration purposes. Production deployments require connecting Stripe, Razorpay, or Adyen merchant credentials.
-- **Persistence Layer**: Default state is maintained in an atomic, serialized JSON store (`autopay_db.json`). Production configurations should bind the provided models to a managed PostgreSQL or Cloud SQL database.
+- **Carrier Regulatory Registration (DLT)**: SMS dispatch to mobile numbers in jurisdictions such as India (+91) requires pre-registered sender headers and message templates approved on a TRAI-compliant Distributed Ledger Technology portal. In development environments, dispatch links are mirrored in the operator console.
+- **Payment Gateway Integration**: The built-in payment link system includes a simulated gateway supporting card, UPI, and net banking flows. Production deployments require connecting merchant API credentials (e.g., Stripe, Razorpay, or Adyen).
+- **State Persistence**: The local environment utilizes an atomic, serialized JSON data store (`autopay_db.json`). Production multi-region deployments should bind the data access layer to PostgreSQL or Google Cloud SQL.
