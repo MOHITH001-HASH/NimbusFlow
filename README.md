@@ -24,21 +24,30 @@ The codebase provides both a standalone, dependency-free Python 3.10+ implementa
 
 ## Installation & Quick Start
 
-### Python Implementation (Zero External Dependencies)
+### Python Backend Implementations (FastAPI / Flask / Native)
 
-The Python implementation requires Python 3.10 or higher and runs entirely using the Python standard library.
+The Python backend is available in three production-grade variants with complete functional parity:
+1. **Native Python Server (`python/app.py` & `python/main.py`)**: Zero external dependencies (uses Python 3.10 standard library `http.server`, `dataclasses`, `hmac`).
+2. **FastAPI Engine (`python/app_fastapi.py`)**: Built with Pydantic v2 schemas, asynchronous streaming for SSE, dependency-injected auth, and OpenAPI `/docs`.
+3. **Flask Engine (`python/app_flask.py`)**: Built with standard WSGI routes, request hooks, and cookie-based session management.
 
 ```bash
-# 1. Launch the standalone Web Console and API server (default port: 8000)
+# Option A: Launch the zero-dependency Python Web Console & API server
 python3 python/main.py
 
-# 2. Run the 10-persona compliance and policy benchmark
+# Option B: Run with FastAPI (requires fastapi, uvicorn)
+uvicorn python.app_fastapi:app --host 0.0.0.0 --port 5000
+
+# Option C: Run with Flask (requires flask)
+python3 python/app_flask.py
+
+# Run the 10-persona compliance and policy benchmark
 python3 python/evals/run_evals.py
 
-# 3. Execute the interactive terminal-based call simulation
+# Execute the interactive terminal-based call simulation
 python3 python/evals/run_demo.py
 
-# 4. Run automated unit tests
+# Run automated unit tests
 python3 python/tests/test_autopay.py
 ```
 

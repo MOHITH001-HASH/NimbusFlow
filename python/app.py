@@ -19,7 +19,7 @@ from python.services.sms import payment_service
 from python.services.agent_brain import agent_brain
 from python.services.eval_runner import eval_runner
 
-PORT = int(os.environ.get("PYTHON_PORT", os.environ.get("PORT", 8000)))
+PORT = int(os.environ.get("PYTHON_PORT", 5000))
 OPS_USER = os.environ.get("OPS_USER", "ops")
 OPS_PASSWORD = os.environ.get("OPS_PASSWORD", "test")
 SHARED_TOOL_SECRET = os.environ.get("SHARED_TOOL_SECRET", "nimbusflow-secure-secret-32-chars")
@@ -154,6 +154,22 @@ class NimbusFlowHTTPHandler(http.server.BaseHTTPRequestHandler):
         if path == "/api/customers":
             return self._send_json(200, store.get_customers_sanitized())
 
+        if path.startswith("/api/customers/") and path.endswith("/pre-call"):
+            cust_id = path.split("/")[3]
+            cust = store.get_customer(cust_id)
+            if not cust:
+                return self._send_json(404, {"error": "Customer not found"})
+            res = PythonComplianceService.evaluate_pre_call(cust)
+            return self._send_json(200, {
+                "canDial": res.can_dial,
+                "reasons": res.reasons,
+                "localTime": res.local_time_formatted,
+                "withinTcpaWindow": res.within_tcpa_window,
+                "dncActive": res.dnc_active,
+                "callLimitReached": res.call_limit_reached,
+                "consentGiven": res.consent_given
+            })
+
         if path.startswith("/api/customers/"):
             cust_id = path.split("/")[3]
             cust = store.get_customer(cust_id)
@@ -162,6 +178,20 @@ class NimbusFlowHTTPHandler(http.server.BaseHTTPRequestHandler):
             data = store.get_customers_sanitized()
             found = next((c for c in data if c["id"] == cust_id), None)
             return self._send_json(200, {"customer": found})
+
+        if path == "/api/calls/events" or path == "/api/events":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            try:
+                self.wfile.write(b"event: connected\ndata: {}\n\n")
+                self.wfile.flush()
+            except Exception:
+                pass
+            return
 
         if path == "/api/stats":
             customers = store.get_customers()
@@ -243,8 +273,56 @@ class NimbusFlowHTTPHandler(http.server.BaseHTTPRequestHandler):
             created = store.add_customer(cust)
             return self._send_json(201, {"customer": created.id, "name": created.name})
 
+        if path == "/api/calls/dial":
+            cust_id = body.get("customerId", "")
+            cust = store.get_customer(cust_id)
+            if not cust:
+                return self._send_json(404, {"error": "Customer not found"})
+            comp = PythonComplianceService.evaluate_pre_call(cust)
+            if not comp.can_dial:
+                return self._send_json(403, {"error": "; ".join(comp.reasons)})
+            call_id = "call_" + secrets.token_hex(6)
+            sess, greeting = agent_brain.start_call(cust, call_id)
+            store.record_call_session(sess)
+            cust.call_attempts_count += 1
+            return self._send_json(200, {
+                "callId": call_id,
+                "status": "connected",
+                "initialGreeting": greeting,
+                "customer": {"name": cust.name, "phone": cust.phone, "plan": cust.plan}
+            })
+
+        if path == "/api/calls/chat":
+            cust_id = body.get("customerId", "")
+            call_id = body.get("callId", "")
+            message = body.get("message", "")
+            cust = store.get_customer(cust_id)
+            sess = store.calls.get(call_id)
+            if not cust or not sess:
+                return self._send_json(404, {"error": "Active call or customer not found"})
+            reply = agent_brain.process_turn(sess, cust, message)
+            return self._send_json(200, {
+                "callId": sess.id,
+                "state": sess.state,
+                "reply": reply,
+                "factorVerified": sess.factor_verified,
+                "outcome": sess.outcome
+            })
+
+        if path == "/api/calls/end":
+            call_id = body.get("callId", "")
+            sess = store.calls.get(call_id)
+            if sess:
+                sess.ended_at = "2026-10-02T11:05:00Z"
+                sess.outcome = body.get("outcome", sess.outcome or "completed")
+            return self._send_json(200, {"status": "ended"})
+
+        if path == "/api/reset":
+            store.reset_data()
+            return self._send_json(200, {"status": "reset", "customersCount": len(store.get_customers())})
+
         # Vapi Tool Call Webhook
-        if path == "/api/vapi/webhook":
+        if path == "/api/vapi/webhook" or path == "/api/tools/vapi-webhook":
             message = body.get("message", body)
             tool_calls = message.get("toolCallList") or message.get("toolCalls") or []
             call_phone = message.get("call", {}).get("customer", {}).get("number")
@@ -359,6 +437,7 @@ class NimbusFlowHTTPHandler(http.server.BaseHTTPRequestHandler):
         return self._send_json(404, {"error": "Not Found"})
 
 def run_server(port: int = PORT):
+    http.server.ThreadingHTTPServer.allow_reuse_address = True
     server = http.server.ThreadingHTTPServer(("0.0.0.0", port), NimbusFlowHTTPHandler)
     print(f"NimbusFlow Python Server running on http://0.0.0.0:{port}")
     try:

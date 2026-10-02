@@ -3,6 +3,8 @@ import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import path from 'node:path';
+import http from 'node:http';
+import { spawn } from 'node:child_process';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { Store } from './src/services/store';
@@ -31,6 +33,56 @@ app.use('/api/', rateLimit({
   windowMs: 60_000, limit: 120,
   skip: (req) => req.originalUrl.startsWith('/api/vapi/') || req.originalUrl.startsWith('/api/tools/') || req.originalUrl.startsWith('/api/calls/events')
 }));
+
+// --- PYTHON BACKEND INTEGRATION & PROXY ---
+const PYTHON_BACKEND_PORT = 5000;
+let pythonChildProcess: any = null;
+
+function initPythonBackend() {
+  const checkReq = http.get(`http://127.0.0.1:${PYTHON_BACKEND_PORT}/healthz`, (res) => {
+    console.log(`[NimbusFlow] Python authoritative backend active on port ${PYTHON_BACKEND_PORT}`);
+  });
+  checkReq.on('error', () => {
+    console.log(`[NimbusFlow] Booting Python authoritative backend on port ${PYTHON_BACKEND_PORT}...`);
+    pythonChildProcess = spawn('python3', ['python/app.py'], {
+      env: { ...process.env, PYTHON_PORT: String(PYTHON_BACKEND_PORT) },
+      stdio: 'pipe'
+    });
+  });
+}
+initPythonBackend();
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (!req.originalUrl.startsWith('/api') && !req.originalUrl.startsWith('/pay')) {
+    return next();
+  }
+  if (req.originalUrl.startsWith('/api/calls/events')) {
+    return next();
+  }
+
+  const proxyHeaders = { ...req.headers };
+  delete proxyHeaders['content-length'];
+
+  const proxyReq = http.request({
+    hostname: '127.0.0.1',
+    port: PYTHON_BACKEND_PORT,
+    path: req.originalUrl,
+    method: req.method,
+    headers: proxyHeaders
+  }, (proxyRes) => {
+    res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+    proxyRes.pipe(res);
+  });
+
+  proxyReq.on('error', () => {
+    next();
+  });
+
+  if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body && Object.keys(req.body).length > 0) {
+    proxyReq.write(JSON.stringify(req.body));
+  }
+  proxyReq.end();
+});
 
 // In-memory active sessions cache
 const activeSessions = new Map<string, CallSession>();

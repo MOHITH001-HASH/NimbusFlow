@@ -1,5 +1,6 @@
 import json
 import os
+from dataclasses import asdict
 from typing import List, Optional, Dict, Any
 from python.models import Customer, CallSession
 
