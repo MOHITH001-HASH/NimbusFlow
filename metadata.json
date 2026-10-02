@@ -1,0 +1,6 @@
+{
+  "name": "NimbusFlow AutoPay Voice Recovery Agent",
+  "description": "Autonomous outbound voice agent (Ava) recovering failed autopay payments with identity verification, dynamic offer ladder, SMS payment links, real-time gateway webhooks, and compliance guardrails.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
