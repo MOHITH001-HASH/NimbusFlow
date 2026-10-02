@@ -9,3 +9,6 @@ coverage/
 autopay_db.json
 .eval_db.json
 .eval_db.json.tmp
+__pycache__/
+*.py[cod]
+*$py.class

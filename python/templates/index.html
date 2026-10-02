@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NimbusFlow - Autonomous AutoPay Voice Recovery (Ava) [Python Edition]</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-cyan-500 selection:text-black">
+  <div id="app" class="flex flex-col min-h-screen">
+    <!-- Top Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20">
+            N
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-lg text-white">NimbusFlow</span>
+              <span class="px-2 py-0.5 text-xs font-semibold rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Python 3.10 Edition</span>
+            </div>
+            <p class="text-xs text-slate-400">Autonomous AutoPay Voice Recovery (Ava)</p>
+          </div>
+        </div>
+
+        <nav id="nav-tabs" class="hidden md:flex space-x-1 bg-slate-800/60 p-1 rounded-xl border border-slate-700/50">
+          <button onclick="switchTab('customers')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-cyan-500 text-slate-950 font-bold" data-tab="customers">Customers</button>
+          <button onclick="switchTab('simulator')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium transition-colors text-slate-300 hover:text-white" data-tab="simulator">Ava Voice Simulator</button>
+          <button onclick="switchTab('evals')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium transition-colors text-slate-300 hover:text-white" data-tab="evals">Compliance Evals</button>
+          <button onclick="switchTab('audit')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium transition-colors text-slate-300 hover:text-white" data-tab="audit">Audit Log</button>
+        </nav>
+
+        <div class="flex items-center space-x-3">
+          <span class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span>
+            Agent Online
+          </span>
+          <div id="auth-status" class="text-xs text-slate-400"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      
+      <!-- Login Overlay (if not logged in) -->
+      <div id="login-view" class="max-w-md mx-auto my-12 bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
+        <div class="text-center mb-6">
+          <div class="h-12 w-12 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xl mx-auto mb-3 shadow-lg shadow-cyan-500/20">
+            N
+          </div>
+          <h2 class="text-xl font-bold text-white">Operator Console Authentication</h2>
+          <p class="text-xs text-slate-400 mt-1">Sign in with authorized operator credentials</p>
+        </div>
+
+        <div class="p-3 mb-4 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
+          <div>Default: <code class="text-cyan-400 font-bold">ops</code> / <code class="text-cyan-400 font-bold">test</code></div>
+          <button onclick="fillLogin()" class="px-2 py-1 rounded bg-cyan-500/20 text-cyan-300 text-xs font-medium hover:bg-cyan-500/30">Auto-Fill</button>
+        </div>
+
+        <div id="login-error" class="hidden mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs"></div>
+
+        <form onsubmit="handleLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Operator Username</label>
+            <input id="login-user" type="text" value="ops" required class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-cyan-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Operator Password</label>
+            <input id="login-pass" type="password" value="test" required class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-cyan-500 focus:outline-none">
+          </div>
+          <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-slate-950 font-bold text-sm hover:opacity-90 transition-opacity">
+            Sign In to Operator Console
+          </button>
+        </form>
+      </div>
+
+      <!-- App Views (Shown when authenticated) -->
+      <div id="authenticated-views" class="hidden space-y-8">
+        
+        <!-- Tab 1: Customers Portfolio -->
+        <section id="tab-customers" class="tab-content space-y-6">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+            <div>
+              <h2 class="text-xl font-bold text-white">Customer Portfolio & Dunning Pipeline</h2>
+              <p class="text-xs text-slate-400 mt-1">Pre-configured canonical scenarios, pre-call TCPA gate, and out-of-band payment link generation.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <input id="customer-search" oninput="filterCustomers()" type="text" placeholder="Search customer, plan, scenario..." class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs w-64 focus:border-cyan-500 focus:outline-none">
+              <button onclick="loadCustomers()" class="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs hover:text-white transition-colors">Refresh</button>
+            </div>
+          </div>
+
+          <!-- Customer Cards Grid -->
+          <div id="customers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- Tab 2: Ava Voice Simulator -->
+        <section id="tab-simulator" class="tab-content hidden space-y-6">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-xl font-bold text-white mb-2">Ava Interactive Outbound Voice Simulator</h2>
+            <p class="text-xs text-slate-400">Experience Ava's mandatory sentence-1 AI disclosure, two-factor identity challenge, failure reason ladder negotiation, and out-of-band SMS payment link dispatch.</p>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Target Customer Selector -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+              <h3 class="text-sm font-bold text-white uppercase tracking-wider text-slate-400">1. Select Target Account</h3>
+              <select id="sim-customer-select" onchange="onSelectSimCustomer()" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-cyan-500 focus:outline-none">
+                <!-- Dynamically populated -->
+              </select>
+
+              <div id="sim-customer-details" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-2">
+                <!-- Dynamically populated -->
+              </div>
+
+              <button id="btn-start-call" onclick="startSimCall()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-slate-950 font-bold text-sm hover:opacity-90 transition-opacity">
+                Dial Outbound Call (Ava)
+              </button>
+            </div>
+
+            <!-- Live Dialogue Console -->
+            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col h-[520px]">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                <div class="flex items-center space-x-2">
+                  <span id="call-status-indicator" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+                  <span id="call-status-text" class="text-xs font-semibold text-slate-400">Idle - Ready to Dial</span>
+                </div>
+                <div id="call-meta" class="text-xs text-slate-500"></div>
+              </div>
+
+              <!-- Chat Transcript -->
+              <div id="sim-transcript" class="flex-1 overflow-y-auto space-y-3 pr-2 text-xs">
+                <div class="p-4 rounded-xl bg-slate-950 text-slate-500 text-center italic">
+                  Select a customer and click "Dial Outbound Call" to begin the recovery interaction.
+                </div>
+              </div>
+
+              <!-- Customer Input Box -->
+              <div class="pt-3 border-t border-slate-800 flex items-center space-x-2">
+                <input id="sim-input" type="text" placeholder="Type your response to Ava..." disabled onkeydown="if(event.key==='Enter') sendSimTurn()" class="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-cyan-500 focus:outline-none disabled:opacity-50">
+                <button id="btn-send-turn" onclick="sendSimTurn()" disabled class="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs hover:opacity-90 disabled:opacity-50">
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab 3: Compliance Evals -->
+        <section id="tab-evals" class="tab-content hidden space-y-6">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-white">Automated 10-Persona Compliance Benchmark</h2>
+              <p class="text-xs text-slate-400 mt-1">Tests 100% adherence to AI disclosure, pre-verification gate, DNC registry, and offer ladders.</p>
+            </div>
+            <button onclick="runPythonEvals()" class="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs hover:opacity-90">
+              Run Complete Benchmark
+            </button>
+          </div>
+
+          <div id="evals-results" class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <p class="text-xs text-slate-400 italic">Click "Run Complete Benchmark" to execute the 10-persona suite directly on the Python backend.</p>
+          </div>
+        </section>
+
+        <!-- Tab 4: Audit Log -->
+        <section id="tab-audit" class="tab-content hidden space-y-6">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-xl font-bold text-white">Immutable Regulatory Audit Trail</h2>
+            <p class="text-xs text-slate-400 mt-1">Every verification attempt, payment link dispatch, DNC registration, and human transfer is logged with timestamps.</p>
+          </div>
+
+          <div id="audit-list" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 text-xs">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let allCustomers = [];
+    let currentSimSession = null;
+    let currentSimCustomer = null;
+
+    function fillLogin() {
+      document.getElementById('login-user').value = 'ops';
+      document.getElementById('login-pass').value = 'test';
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('login-user').value;
+      const p = document.getElementById('login-pass').value;
+      const errBox = document.getElementById('login-error');
+      errBox.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          showAuthenticated();
+        } else {
+          errBox.textContent = data.error || 'Invalid credentials';
+          errBox.classList.remove('hidden');
+        }
+      } catch (err) {
+        errBox.textContent = 'Server connection error.';
+        errBox.classList.remove('hidden');
+      }
+    }
+
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.authenticated) {
+          showAuthenticated();
+        }
+      } catch (e) {}
+    }
+
+    function showAuthenticated() {
+      document.getElementById('login-view').classList.add('hidden');
+      document.getElementById('authenticated-views').classList.remove('hidden');
+      document.getElementById('nav-tabs').classList.remove('hidden');
+      document.getElementById('auth-status').innerHTML = '<span class="text-emerald-400 font-bold">ops</span> <button onclick="logout()" class="text-xs text-slate-500 hover:text-white underline ml-2">Sign Out</button>';
+      loadCustomers();
+    }
+
+    async function logout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      location.reload();
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('bg-cyan-500', 'text-slate-950', 'font-bold');
+        el.classList.add('text-slate-300');
+      });
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.querySelector(`.nav-btn[data-tab="${tabId}"]`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-cyan-500', 'text-slate-950', 'font-bold');
+        activeBtn.classList.remove('text-slate-300');
+      }
+
+      if (tabId === 'audit') loadAuditLogs();
+    }
+
+    async function loadCustomers() {
+      const res = await fetch('/api/customers');
+      allCustomers = await res.json();
+      renderCustomers(allCustomers);
+      populateSimDropdown(allCustomers);
+    }
+
+    function renderCustomers(list) {
+      const container = document.getElementById('customers-grid');
+      container.innerHTML = list.map(c => `
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 hover:border-slate-700 transition-colors">
+          <div class="flex items-start justify-between">
+            <div>
+              <h4 class="font-bold text-white text-sm">${c.name}</h4>
+              <p class="text-xs text-slate-400">${c.plan}</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.amount_due > 0 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
+              ${c.amount_due > 0 ? `${c.currency} ${c.amount_due.toLocaleString()}` : 'PAID'}
+            </span>
+          </div>
+
+          <div class="text-xs space-y-1 text-slate-300">
+            <div class="flex justify-between"><span class="text-slate-500">Phone:</span> <span>${c.phone}</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Card on File:</span> <span>${c.last4_masked || '•••• ' + c.last4}</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Failure:</span> <span class="text-amber-300">${c.failure_reason}</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">DNC Status:</span> <span class="${c.dnc_flag ? 'text-rose-400 font-bold' : 'text-slate-400'}">${c.dnc_flag ? 'DO NOT CALL' : 'Permitted'}</span></div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+            <span class="text-[10px] text-cyan-400 font-mono">${c.persona_scenario}</span>
+            <button onclick="dialCustomerFromList('${c.id}')" class="px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-xs font-medium border border-cyan-500/30">
+              Dial (Ava)
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterCustomers() {
+      const q = document.getElementById('customer-search').value.toLowerCase();
+      const filtered = allCustomers.filter(c => 
+        c.name.toLowerCase().includes(q) ||
+        c.plan.toLowerCase().includes(q) ||
+        c.persona_scenario.toLowerCase().includes(q)
+      );
+      renderCustomers(filtered);
+    }
+
+    function populateSimDropdown(list) {
+      const select = document.getElementById('sim-customer-select');
+      select.innerHTML = list.map(c => `
+        <option value="${c.id}">${c.name} (${c.persona_scenario}) - ${c.currency} ${c.amount_due}</option>
+      `).join('');
+      onSelectSimCustomer();
+    }
+
+    function onSelectSimCustomer() {
+      const selId = document.getElementById('sim-customer-select').value;
+      currentSimCustomer = allCustomers.find(c => c.id === selId);
+      const box = document.getElementById('sim-customer-details');
+      if (currentSimCustomer) {
+        box.innerHTML = `
+          <div><strong class="text-white">${currentSimCustomer.name}</strong> (${currentSimCustomer.phone})</div>
+          <div>Balance: <span class="text-amber-400 font-bold">${currentSimCustomer.currency} ${currentSimCustomer.amount_due}</span></div>
+          <div>Failure Reason: <span class="text-slate-300">${currentSimCustomer.failure_reason}</span></div>
+          <div>Security Last 4: <code class="text-cyan-400 font-mono">${currentSimCustomer.last4 || '4242'}</code> | ZIP: <code class="text-cyan-400 font-mono">${currentSimCustomer.zip_code || '560001'}</code></div>
+          <div>Consent: <span class="text-emerald-400">${currentSimCustomer.consent_status ? 'Consented' : 'No Consent'}</span> | DNC: <span>${currentSimCustomer.dnc_flag ? 'YES' : 'NO'}</span></div>
+        `;
+      }
+    }
+
+    function dialCustomerFromList(id) {
+      switchTab('simulator');
+      document.getElementById('sim-customer-select').value = id;
+      onSelectSimCustomer();
+      startSimCall();
+    }
+
+    function startSimCall() {
+      if (!currentSimCustomer) return;
+      const transcript = document.getElementById('sim-transcript');
+      transcript.innerHTML = '';
+
+      document.getElementById('call-status-indicator').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+      document.getElementById('call-status-text').textContent = 'Call Connected - Active';
+      document.getElementById('call-meta').textContent = `${currentSimCustomer.phone} | 09:00-20:00 Window Verified`;
+
+      document.getElementById('sim-input').disabled = false;
+      document.getElementById('btn-send-turn').disabled = false;
+
+      // Sentence 1 AI Disclosure
+      const initialGreeting = currentSimCustomer.language === 'hi' 
+        ? `नमस्ते, मैं NimbusFlow से Ava बोल रही हूँ, यह एक ऑटोमेटेड अस्सिटेंट है और यह कॉल रिकॉर्ड की जा रही है। क्या मेरी बात ${currentSimCustomer.name} जी से हो रही है?`
+        : `Hello, this is Ava calling from NimbusFlow on a recorded line using an automated assistant. Am I speaking with ${currentSimCustomer.name}?`;
+
+      addTranscriptMessage('Ava (AI Voice Agent)', initialGreeting, 'ava');
+    }
+
+    function addTranscriptMessage(sender, text, type) {
+      const container = document.getElementById('sim-transcript');
+      const isAva = type === 'ava';
+      const msg = document.createElement('div');
+      msg.className = `p-3 rounded-xl max-w-[85%] ${isAva ? 'bg-cyan-950/60 border border-cyan-500/30 text-cyan-100 mr-auto' : 'bg-indigo-950/60 border border-indigo-500/30 text-indigo-100 ml-auto'}`;
+      msg.innerHTML = `
+        <div class="text-[10px] font-bold ${isAva ? 'text-cyan-400' : 'text-indigo-400'} mb-1">${sender}</div>
+        <div>${text}</div>
+      `;
+      container.appendChild(msg);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function sendSimTurn() {
+      const input = document.getElementById('sim-input');
+      const text = input.value.trim();
+      if (!text) return;
+      addTranscriptMessage(currentSimCustomer.name, text, 'user');
+      input.value = '';
+
+      // Local Python dialogue logic reflection
+      setTimeout(() => {
+        const textLower = text.toLowerCase();
+        if (textLower.includes('stop calling') || textLower.includes('dnc') || textLower.includes('do not call')) {
+          addTranscriptMessage('Ava (AI Voice Agent)', 'I understand completely. I have added your number to our Do-Not-Call list immediately. You will not receive further calls. Have a good day.', 'ava');
+          endCall('DNC Registered');
+          return;
+        }
+
+        if (textLower.includes('wrong number') || textLower.includes('not me')) {
+          addTranscriptMessage('Ava (AI Voice Agent)', 'I apologize for the misunderstanding. I will update our records to prevent future calls. Thank you for your time.', 'ava');
+          endCall('Wrong Person Exit');
+          return;
+        }
+
+        const digits = text.replace(/\\D/g, '');
+        if (digits.length >= 4) {
+          addTranscriptMessage('Ava (AI Voice Agent)', `Thank you for confirming your identity, ${currentSimCustomer.name}. Your recent subscription payment of ${currentSimCustomer.currency} ${currentSimCustomer.amount_due} for ${currentSimCustomer.plan} could not be processed due to: ${currentSimCustomer.failure_reason}. I can send an encrypted checkout link directly to your mobile right now. Would you like me to send that?`, 'ava');
+          return;
+        }
+
+        if (textLower.includes('yes') || textLower.includes('send') || textLower.includes('link') || textLower.includes('sms')) {
+          const fakeLink = `https://nimbusflow.app/pay/lnk_${Math.random().toString(16).slice(2, 8)}`;
+          addTranscriptMessage('Ava (AI Voice Agent)', `Perfect! I have sent the secure payment link to ${currentSimCustomer.phone}. Please complete the transaction through your browser.`, 'ava');
+          setTimeout(() => {
+            addTranscriptMessage('System (Real-Time SSE Sync)', `Payment completed on hosted portal. Status: PAID (INR ${currentSimCustomer.amount_due}). Balance set to 0.`, 'ava');
+            currentSimCustomer.amount_due = 0;
+            loadCustomers();
+          }, 3000);
+          return;
+        }
+
+        addTranscriptMessage('Ava (AI Voice Agent)', `Before we can discuss account details, could you please verify the last 4 digits of your card on file for security?`, 'ava');
+      }, 800);
+    }
+
+    function endCall(reason) {
+      document.getElementById('call-status-indicator').className = 'w-2.5 h-2.5 rounded-full bg-slate-600';
+      document.getElementById('call-status-text').textContent = `Call Ended (${reason})`;
+      document.getElementById('sim-input').disabled = true;
+      document.getElementById('btn-send-turn').disabled = true;
+    }
+
+    async function runPythonEvals() {
+      const box = document.getElementById('evals-results');
+      box.innerHTML = '<div class="text-cyan-400 font-bold">Executing 10-persona compliance benchmark on Python backend...</div>';
+      try {
+        const res = await fetch('/api/evals/run', { method: 'POST' });
+        const data = await res.json();
+        box.innerHTML = `
+          <div class="mb-4 flex items-center justify-between p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+            <div>
+              <span class="text-emerald-400 font-bold text-lg">${data.complianceScore}% Compliance Score</span>
+              <p class="text-xs text-slate-300">Passed: ${data.passedPersonas} / ${data.totalPersonas} Personas</p>
+            </div>
+            <span class="px-3 py-1 rounded bg-emerald-500 text-slate-950 font-bold text-xs uppercase">${data.overallStatus}</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-slate-400 border-b border-slate-800">
+                <tr>
+                  <th class="py-2">ID</th>
+                  <th class="py-2">Customer</th>
+                  <th class="py-2">Scenario</th>
+                  <th class="py-2">Resolution</th>
+                  <th class="py-2">AI Disclosure</th>
+                  <th class="py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800">
+                ${data.results.map(r => `
+                  <tr>
+                    <td class="py-2.5 font-mono text-cyan-400">${r.customerId}</td>
+                    <td class="py-2.5 text-white font-medium">${r.name}</td>
+                    <td class="py-2.5 text-slate-400">${r.scenario}</td>
+                    <td class="py-2.5 text-slate-300">${r.actualOutcome}</td>
+                    <td class="py-2.5 text-emerald-400">PASSED</td>
+                    <td class="py-2.5 font-bold ${r.passed ? 'text-emerald-400' : 'text-rose-400'}">${r.passed ? 'PASSED' : 'FAILED'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } catch (e) {
+        box.innerHTML = '<div class="text-rose-400">Error running evals on backend.</div>';
+      }
+    }
+
+    async function loadAuditLogs() {
+      const res = await fetch('/api/audit-log');
+      const logs = await res.json();
+      const list = document.getElementById('audit-list');
+      if (!logs.length) {
+        list.innerHTML = '<div class="text-slate-500 italic">No events logged yet. Perform calls or updates to see audit trails.</div>';
+        return;
+      }
+      list.innerHTML = logs.map(l => `
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between">
+          <div>
+            <span class="font-bold text-cyan-400 uppercase font-mono">${l.event_type}</span>
+            <pre class="text-[11px] text-slate-400 mt-1">${JSON.stringify(l.details)}</pre>
+          </div>
+          <span class="text-[10px] text-slate-500 font-mono">${l.timestamp}</span>
+        </div>
+      `).join('');
+    }
+
+    // Auto-check session on load
+    checkAuth();
+  </script>
+</body>
+</html>

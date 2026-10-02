@@ -1,0 +1,10 @@
+# NimbusFlow Python Runtime Dependencies
+# Note: The core Python engine in `python/` runs completely with zero external dependencies
+# using the Python 3.10+ standard library (http.server, dataclasses, unittest, json, secrets).
+#
+# If deploying in enterprise ASGI/WSGI production environments, the following packages are recommended:
+fastapi>=0.110.0
+uvicorn>=0.28.0
+pydantic>=2.6.0
+requests>=2.31.0
+python-dotenv>=1.0.1
